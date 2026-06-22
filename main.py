@@ -11,7 +11,9 @@ print("[2] Update Player Data")
 print("[3] Get Account Info Using Display Name")
 print("[4] Get Title Info")
 print("[5] Get Account Info Using Playfab ID")
-choice = input("Select an option (1, 2, 3, 4, 5): ").strip()
+print("[6] Purchase Item")
+print("[7] Get User Inventory")
+choice = input("Select an option (1, 2, 3, 4, 5, 6, 7): ").strip()
 
 catalog_version = None
 save_to_txt = "n"
@@ -33,6 +35,13 @@ if choice in ("4"):
 if choice in ("5"):
     gameID = input("Enter the playfab ID: ").strip()
 
+if choice in ("6"):
+    item_id = input("Enter your Item ID: ").strip()
+    currency_code = input("Enter your currency code: ").strip()
+    price_amount = int(input("Etner the price: ").strip())
+    catalog_version = input("Enter Catalog Version (Leave blank for default): ").strip()
+    if not catalog_version:
+        catalog_version = None
 
 def pulltitle(success, failure):
     if success:
@@ -130,10 +139,49 @@ def update_callback(success, failure):
     elif failure:
         print(f"Failed to update: {failure.GenerateErrorReport()}")
 
+def purchase(success, failure):
+    if success:
+        print("--- Item Purchased ---")
+        items_bought = success.get("Items", [])
+        for bought_item in items_bought:
+            print(f"Bought: {bought_item.get('DisplayName')} (Instance ID: {bought_item.get('ItemInstanceId')})")
+    elif failure:
+        error_msg = failure.get("errorMessage", "Unknown Error")
+        error_code = failure.get("errorCode", "N/A")
+        print(f"Failed to Purchase: {failure.GenerateErrorReport()}")
+
+def inventory(success, failure):
+    if success:
+        print("--- Player Inventory ---")
+        inventory = success.get("Inventory", [])
+
+        if not inventory:
+            print("Inventory is empty")
+        else:
+            for item in inventory:
+                display_name = item.get("DisplayName", "No Name")
+                item_id = item.get("ItemId")
+                instance_id = item.get("ItemInstanceId")
+                print(f"Item: {display_name} | ID: {item_id} | Instance ID: {instance_id}")
+
+        print("--- Virtual Currency Balance")
+        balances = success.get("VirtualCurrency", {})
+        if not balances:
+            print("No virtual currency")
+        else:
+            for currency, amount in balances.items():
+                print(f"{currency}: {amount}")
+        
+    elif failure:
+        error_msg = failure.get("errorMessage", "Unknown")
+        error_code = failure.get("errorCode", "N/A")
+        print(f"Failed to get inventory: [{error_code}]")
+
 def login_callback(success, failure):
     if success:
         print("Logged In")
         print(f"Playfab ID: {success.get('PlayFabId')}\n")
+        print(f"Session Ticket: {success.get('SessionTicket')}\n")
 
         if choice in ("1"):
             catalog_request = {"CatalogVersion": catalog_version}
@@ -154,6 +202,22 @@ def login_callback(success, failure):
         if choice in ("5"):
             account_requestID = {"PlayFabId": gameID}
             PlayFabClientAPI.GetAccountInfo(account_requestID, accountinfoID)
+
+        if choice in ("6"):
+            purchase_request = {
+                "ItemId": item_id,
+                "VirtualCurrency": currency_code,
+                "Price": price_amount
+            }
+            if catalog_version:
+                purchase_request["CatalogVersion"] = catalog_version
+            print(f"Attempting to purchase item {item_id} from catalog {catalog_version}")
+            PlayFabClientAPI.PurchaseItem(purchase_request, purchase)
+        
+        if choice in ("7"):
+            inventory_request = {}
+            print("Fetching Inventory")
+            PlayFabClientAPI.GetUserInventory(inventory_request, inventory)
 
     elif failure:
         print(f"Login failed: {failure.GenerateErrorReport()}")
