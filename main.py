@@ -3,11 +3,20 @@ import time
 
 PlayFabSettings.TitleId = input("Enter Title ID: ")
 custom_id = input("Enter Custom ID: ")
-catalog_version = input("Enter Catalog Version (Leave blank for default): ")
-if not catalog_version.strip():
-    catalog_version = None
 
-save_to_txt = input("Do you want to save to txt [y,n]: ").lower().strip()
+print("\n--- MENU ---")
+print("[1] Get Catalog Items")
+print("[2] Update Player Data")
+choice = input("Select an option (1, 2): ").strip()
+
+catalog_version = None
+save_to_txt = "n"
+
+if choice in ("1", "3"):
+    catalog_version = input("Enter Catalog Version (Leave blank for default): ")
+    if not catalog_version.strip():
+        catalog_version = None
+    save_to_txt = input("Do you want to save to txt [y,n]: ").lower().strip()
 
 def catalog_callback(success, failure):
     if success:
@@ -30,7 +39,7 @@ def catalog_callback(success, failure):
             print("\nSuccessfully saved to catalogoutput.txt")
         else:
             for item in items:
-                print(f"Item Name: {item.get("DisplayName", "No Name")} | ID: {item.get("ItemId")} | Price: {item.get("VirtualCurrencyPrices")}")
+                print(f"Item Name: {item.get('DisplayName', 'No Name')} | ID: {item.get('ItemId')} | Price: {item.get('VirtualCurrencyPrices')}")
 
     elif failure:
         print(f"Failed to get catalog: {failure.GenerateErrorReport()}")
@@ -44,13 +53,15 @@ def update_callback(success, failure):
 def login_callback(success, failure):
     if success:
         print("Logged In")
-        print(f"Playfab ID: {success.get('PlayFabId')}")
+        print(f"Playfab ID: {success.get('PlayFabId')}\n")
 
-        catalog_request = {"CatalogVersion": catalog_version}
-        PlayFabClientAPI.GetCatalogItems(catalog_request, catalog_callback)
+        if choice in ("1"):
+            catalog_request = {"CatalogVersion": catalog_version}
+            PlayFabClientAPI.GetCatalogItems(catalog_request, catalog_callback)
 
-        data_request = {"Data": {"CurrentLevel": "5", "Class": "Larp"}}
-        PlayFabClientAPI.UpdateUserData(data_request, update_callback)
+        if choice in ("2"):
+            data_request = {"Data": {"CurrentLevel": "5", "Class": "Larp"}}
+            PlayFabClientAPI.UpdateUserData(data_request, update_callback)
 
     elif failure:
         print(f"Login failed: {failure.GenerateErrorReport()}")
