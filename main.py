@@ -7,16 +7,35 @@ custom_id = input("Enter Custom ID: ")
 print("\n--- MENU ---")
 print("[1] Get Catalog Items")
 print("[2] Update Player Data")
-choice = input("Select an option (1, 2): ").strip()
+print("[3] Get Account Info Using Display Name")
+choice = input("Select an option (1, 2, 3): ").strip()
 
 catalog_version = None
 save_to_txt = "n"
+disname = None
 
-if choice in ("1", "3"):
+if choice in ("1"):
     catalog_version = input("Enter Catalog Version (Leave blank for default): ")
     if not catalog_version.strip():
         catalog_version = None
     save_to_txt = input("Do you want to save to txt [y,n]: ").lower().strip()
+
+if choice in ("3"):
+    disname = input("Enter the display name you want to search: ").strip()
+
+
+def accountinfo(success, failure):
+    if success:
+        print("--- Account Info ---")
+        account_info = success.get("AccountInfo", {})
+        print(f"Playfab ID: {account_info.get("PlayFabId")}")
+        print(f"Username: {account_info.get("Username", "N/A")}")
+        print(f"Created At: {account_info.get("Created")}")
+
+        title_info = account_info.get("TitleInfo", {})
+        print(f"Display Name: {title_info.get("DisplayName", "N/A")}")
+    elif failure:
+        print(f"\nLookup failed: {failure.GenerateErrorReport()}")
 
 def catalog_callback(success, failure):
     if success:
@@ -62,6 +81,10 @@ def login_callback(success, failure):
         if choice in ("2"):
             data_request = {"Data": {"CurrentLevel": "5", "Class": "Larp"}}
             PlayFabClientAPI.UpdateUserData(data_request, update_callback)
+
+        if choice in ("3"):
+            account_request = {"TitleDisplayName": disname}
+            PlayFabClientAPI.GetAccountInfo(account_request, accountinfo)
 
     elif failure:
         print(f"Login failed: {failure.GenerateErrorReport()}")
