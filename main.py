@@ -1,6 +1,6 @@
 from playfab import PlayFabClientAPI, PlayFabSettings
 import time
-import json  # Handles parsing and formatting the nested JSON data
+import json  
 
 PlayFabSettings.TitleId = input("Enter Title ID: ")
 custom_id = input("Enter Custom ID: ")
@@ -10,11 +10,13 @@ print("[1] Get Catalog Items")
 print("[2] Update Player Data")
 print("[3] Get Account Info Using Display Name")
 print("[4] Get Title Info")
-choice = input("Select an option (1, 2, 3, 4): ").strip()
+print("[5] Get Account Info Using Playfab ID")
+choice = input("Select an option (1, 2, 3, 4, 5): ").strip()
 
 catalog_version = None
 save_to_txt = "n"
 disname = None
+gameID = None
 
 if choice in ("1"):
     catalog_version = input("Enter Catalog Version (Leave blank for default): ")
@@ -22,12 +24,14 @@ if choice in ("1"):
         catalog_version = None
     save_to_txt = input("Do you want to save to txt [y,n]: ").lower().strip()
 
-# Added save prompt if option 4 is selected
+if choice in ("3"):
+    disname = input("Enter the display name you want to search: ").strip()
+
 if choice in ("4"):
     save_to_txt = input("Do you want to save Title Info to txt [y,n]: ").lower().strip()
 
-if choice in ("3"):
-    disname = input("Enter the display name you want to search: ").strip()
+if choice in ("5"):
+    gameID = input("Enter the playfab ID: ").strip()
 
 
 def pulltitle(success, failure):
@@ -37,7 +41,6 @@ def pulltitle(success, failure):
 
         if titleinfo:
             if save_to_txt == "y":
-                # Save to a text file
                 with open("titleoutput.txt", "w", encoding="utf-8") as file:
                     file.write("--- Title Info ---\n\n")
                     for key, value in titleinfo.items():
@@ -46,15 +49,15 @@ def pulltitle(success, failure):
                             parsed_json = json.loads(value)
                             formatted_value = json.dumps(parsed_json, indent=4)
                             file.write(f"Value:\n{formatted_value}\n")
-                            # Print a preview to console
                             print(f"Key: {key} -> (JSON saved to file)")
+                        
                         except (ValueError, TypeError):
                             file.write(f"Value: {value}\n")
                             print(f"Key: {key} -> (Text saved to file)")
+                        
                         file.write("-" * 40 + "\n")
                 print("\nSuccessfully saved to titleoutput.txt")
             else:
-                # Regular terminal print if 'n'
                 for key, value in titleinfo.items():
                     print(f"Key: {key}")
                     try:
@@ -70,6 +73,19 @@ def pulltitle(success, failure):
         print(f"\nLookup failed: {failure.GenerateErrorReport()}")
 
 def accountinfo(success, failure):
+    if success:
+        print("--- Account Info ---")
+        account_info = success.get("AccountInfo", {})
+        print(f"Playfab ID: {account_info.get('PlayFabId')}")
+        print(f"Username: {account_info.get('Username', 'N/A')}")
+        print(f"Created At: {account_info.get('Created')}")
+
+        title_info = account_info.get('TitleInfo', {})
+        print(f"Display Name: {title_info.get('DisplayName', 'N/A')}")
+    elif failure:
+        print(f"\nLookup failed: {failure.GenerateErrorReport()}")
+
+def accountinfoID(success, failure):
     if success:
         print("--- Account Info ---")
         account_info = success.get("AccountInfo", {})
@@ -134,6 +150,10 @@ def login_callback(success, failure):
         if choice in ("4"):
             titleinfo_request = {}
             PlayFabClientAPI.GetTitleData(titleinfo_request, pulltitle)
+
+        if choice in ("5"):
+            account_requestID = {"PlayFabId": gameID}
+            PlayFabClientAPI.GetAccountInfo(account_requestID, accountinfoID)
 
     elif failure:
         print(f"Login failed: {failure.GenerateErrorReport()}")
