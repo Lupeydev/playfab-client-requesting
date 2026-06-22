@@ -13,12 +13,14 @@ print("[4] Get Title Info")
 print("[5] Get Account Info Using Playfab ID")
 print("[6] Purchase Item")
 print("[7] Get User Inventory")
-choice = input("Select an option (1, 2, 3, 4, 5, 6, 7): ").strip()
+print("[8] Change Display Name")
+choice = input("Select an option (1, 2, 3, 4, 5, 6, 7, 8): ").strip()
 
 catalog_version = None
 save_to_txt = "n"
 disname = None
 gameID = None
+newdisplayname = None
 
 if choice in ("1"):
     catalog_version = input("Enter Catalog Version (Leave blank for default): ")
@@ -42,6 +44,9 @@ if choice in ("6"):
     catalog_version = input("Enter Catalog Version (Leave blank for default): ").strip()
     if not catalog_version:
         catalog_version = None
+    
+if choice in ("8"):
+    new_display_name = input("Enter new display name: ").strip()
 
 def pulltitle(success, failure):
     if success:
@@ -175,7 +180,16 @@ def inventory(success, failure):
     elif failure:
         error_msg = failure.get("errorMessage", "Unknown")
         error_code = failure.get("errorCode", "N/A")
-        print(f"Failed to get inventory: [{error_code}]")
+        print(f"Failed to get inventory: [{error_code}] {error_msg}")
+
+def display_name(success, failure):
+    if success:
+        print("--- Display Name ---")
+        print(f"New Display Name: {success.get('DisplayName')}")
+    elif failure:
+        error_msg = failure.get("errorMessage", "Unknown Error")
+        error_code = failure.get("errorCode", "N/A")
+        print(f"Failed to update Display Name: [{error_code}] {error_msg}")
 
 def login_callback(success, failure):
     if success:
@@ -218,6 +232,13 @@ def login_callback(success, failure):
             inventory_request = {}
             print("Fetching Inventory")
             PlayFabClientAPI.GetUserInventory(inventory_request, inventory)
+
+        if choice in ("8"):
+            display_name_request = {
+                "DisplayName": new_display_name
+            }
+            print(f"Attempting to update display name to {new_display_name}")
+            PlayFabClientAPI.UpdateUserTitleDisplayName(display_name_request, display_name)
 
     elif failure:
         print(f"Login failed: {failure.GenerateErrorReport()}")
