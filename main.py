@@ -14,13 +14,17 @@ print("[5] Get Account Info Using Playfab ID")
 print("[6] Purchase Item")
 print("[7] Get User Inventory")
 print("[8] Change Display Name")
-choice = input("Select an option (1, 2, 3, 4, 5, 6, 7, 8): ").strip()
+print("[9] Add Virtual Currency")
+choice = input("Select an option (1, 2, 3, 4, 5, 6, 7, 8, 9): ").strip()
 
 catalog_version = None
 save_to_txt = "n"
 disname = None
 gameID = None
 newdisplayname = None
+
+add_currency_code = None
+add_currency_amount = 0
 
 if choice in ("1"):
     catalog_version = input("Enter Catalog Version (Leave blank for default): ")
@@ -47,6 +51,10 @@ if choice in ("6"):
     
 if choice in ("8"):
     new_display_name = input("Enter new display name: ").strip()
+
+if choice in ("9"):
+    add_currency_code = input("Enter the currency code: ").strip()
+    add_currency_amount = int(input("Enter the amount: ").strip())
 
 def pulltitle(success, failure):
     if success:
@@ -191,6 +199,17 @@ def display_name(success, failure):
         error_code = failure.get("errorCode", "N/A")
         print(f"Failed to update Display Name: [{error_code}] {error_msg}")
 
+def givecurrency(success, failure):
+    if success:
+        print("--- Currency Added ---")
+        print(f"Currency Code: {success.get('VirtualCurrency')}")
+        print(f"Amount Added: {success.get('BalanceChange')}")
+        print(f"New Wallet Balance: {success.get('Balance')}")
+    elif failure:
+        error_msg = failure.get("errorMessage", "Unknown Error",)
+        error_code = failure.get("errorCode", "N/A")
+        print(f"Failed to add currency: [{error_code}] {error_msg}")
+
 def login_callback(success, failure):
     if success:
         print("Logged In")
@@ -239,6 +258,13 @@ def login_callback(success, failure):
             }
             print(f"Attempting to update display name to {new_display_name}")
             PlayFabClientAPI.UpdateUserTitleDisplayName(display_name_request, display_name)
+
+        if choice in ("9"):
+            add_currency_request = {
+                "VirtualCurrency": add_currency_code,
+                "Amount": add_currency_amount
+            }
+            print(f"Attempting to give currency {add_currency_amount} {add_currency_code}")
 
     elif failure:
         print(f"Login failed: {failure.GenerateErrorReport()}")
